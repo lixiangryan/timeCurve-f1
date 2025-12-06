@@ -1,0 +1,39 @@
+Starting fetch V3 (Time Chunks)...
+Fetching https://api.openf1.org/v1/meetings?year=2024&country_name=Japan...
+  -> Got 1 items.
+Meeting Key: 1232
+Fetching https://api.openf1.org/v1/sessions?meeting_key=1232&session_name=Race...
+  -> Got 1 items.
+Session Key: 9496
+
+--- Processing Driver: 1 ---
+Fetching https://api.openf1.org/v1/laps?session_key=9496&driver_number=1...
+  -> Got 53 items.
+Saved data/laps_1.csv (53 records)
+Time Range: 2024-04-07 05:05:00+00:00 to 2024-04-07 06:59:00+00:00
+Fetching car_data...
+Saved data/car_data_1.csv (25780 records)
+Fetching location...
+Saved data/loc_1.csv (26216 records)
+
+--- Processing Driver: 11 ---
+Fetching https://api.openf1.org/v1/laps?session_key=9496&driver_number=11...
+  -> Got 53 items.
+Saved data/laps_11.csv (53 records)
+Time Range: 2024-04-07 05:05:00+00:00 to 2024-04-07 06:59:00+00:00
+Fetching car_data...
+Saved data/car_data_11.csv (25780 records)
+Fetching location...
+Saved data/loc_11.csv (26216 records)
+
+--- Processing Driver: 22 ---
+Fetching https://api.openf1.org/v1/laps?session_key=9496&driver_number=22...
+  -> Got 52 items.
+Saved data/laps_22.csv (52 records)
+Time Range: 2024-04-07 05:06:00+00:00 to 2024-04-07 06:59:00+00:00
+Fetching car_data...
+Saved data/car_data_22.csv (25555 records)
+Fetching location...
+Saved data/loc_22.csv (25982 records)
+
+Done.
