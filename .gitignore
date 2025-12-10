@@ -1,0 +1,8 @@
+__pycache__/
+*.log
+*.txt
+!requirements.txt
+!README.txt
+!output/*.txt
+.gemini/
+.vscode/

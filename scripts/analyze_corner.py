@@ -12,7 +12,7 @@ from matplotlib.collections import LineCollection
 # Approximate Scale for Suzuka S-Curves (Need to verify with plot first)
 # For now, we will pick a segment based on Lap 2 of Max, then use that ROI.
 TARGET_DRIVERS = [1, 11, 22]
-FEATURES = ['speed', 'throttle', 'brake', 'n_gear', 'rpm', 'drs']
+FEATURES = ['throttle', 'brake', 'n_gear']
 
 def load_and_merge(driver):
     print(f"Loading data for Driver {driver}...")

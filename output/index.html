@@ -1,21 +1,91 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>F1 Time Curve Analysis: 2024 Japan S-Curves</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #111; color: #eee; text-align: center; }
-        #chart { background: #222; margin: 20px auto; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .controls { margin: 20px; }
-        button { background: #e10600; color: white; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 4px; }
-        button:hover { background: #ff1e1e; }
-        .tooltip { position: absolute; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
-        .legend { font-size: 14px; margin-top: 10px; }
-        .driver-label { font-weight: bold; margin: 0 10px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #111;
+            color: #eee;
+            text-align: center;
+        }
+
+        #chart {
+            background: #222;
+            margin: 20px auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls {
+            margin: 20px;
+        }
+
+        button {
+            background: #e10600;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: #ff1e1e;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .legend {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .driver-label {
+            font-weight: bold;
+            margin: 0 10px;
+        }
+
+        .explanation {
+            max-width: 800px;
+            margin: 30px auto;
+            text-align: left;
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 5px solid #e10600;
+            line-height: 1.6;
+        }
+
+        .explanation h2 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .explanation p {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .explanation strong {
+            color: #fff;
+        }
     </style>
 </head>
+
 <body>
 
     <h1>F1 Time Curve: S-Curves Comparison</h1>
@@ -33,14 +103,36 @@
         <span class="driver-label" style="color: #ff0844;">● Tsunoda (22)</span>
     </div>
 
+    <div class="explanation">
+        <h2>📊 如何解讀此圖表 (How to Read)</h2>
+        <p>此圖並非賽道地圖，而是<strong>「駕駛操作相似度空間」</strong>的投影。X 軸與 Y 軸沒有物理單位。</p>
+        <p>
+            <strong>1. 距離即相似度 (Distance = Similarity)：</strong><br>
+            若兩個點靠得很近，代表在該瞬間，這兩位車手的<strong>操作特徵（油門、煞車、檔位）幾乎一致</strong>。<br>
+            若兩個點分得很開，代表他們在處理該彎道時採取了截然不同的手法。
+        </p>
+        <p>
+            <strong>2. 軸的意義 (The Axes)：</strong><br>
+        <ul>
+            <li><strong>X 軸 (主要進程)</strong>：大致代表速度與能量的變化階段（例如：由高速入彎到低速過彎）。</li>
+            <li><strong>Y 軸 (操作細節)</strong>：代表同樣狀態下的手法差異。例如同樣在減速，一人是「重踩煞車」，另一人是「收油門滑行」，這兩種不同的操作就會在 Y 軸上分開。</li>
+        </ul>
+        </p>
+        <p>
+            <strong>3. 觀察重點 (Key Insight)：</strong><br>
+            請注意線條<strong>分叉 (Divergence)</strong> 的時刻。這顯示了車手風格的差異點，例如 Verstappen (V-Style) 與 Perez (U-Style) 在 S
+            彎入彎處的顯著不同。
+        </p>
+    </div>
+
     <div class="tooltip" id="tooltip"></div>
 
     <script>
         // Config
         const width = 800;
         const height = 600;
-        const margin = {top: 20, right: 20, bottom: 20, left: 20};
-        const colors = {1: '#4facfe', 11: '#00f260', 22: '#ff0844'}; // Blue, Green, Red
+        const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+        const colors = { 1: '#4facfe', 11: '#00f260', 22: '#ff0844' }; // Blue, Green, Red
 
         // SVG Setup
         const svg = d3.select("#chart")
@@ -57,7 +149,7 @@
 
         // Load Data
         d3.csv("comparison_scurve_data.csv").then(data => {
-            
+
             // Parse numbers
             data.forEach(d => {
                 d.mds_x = +d.mds_x;
@@ -113,26 +205,32 @@
             let isPlaying = false;
             let timer;
 
-            function update(step) {
+            function update(step, duration = 0) {
                 currentStep = step;
                 d3.select("#timeSlider").property("value", step);
-                
-                dots.each(function(d) {
+
+                dots.each(function (d) {
                     const idx = Math.min(step, d.values.length - 1);
                     const point = d.values[idx];
-                    
-                    d3.select(this)
-                        .attr("cx", xScale(point.mds_x))
-                        .attr("cy", yScale(point.mds_y));
-                        
-                    // Tooltip update if needed (simple logic)
+
+                    const dot = d3.select(this);
+
+                    if (duration > 0) {
+                        dot.transition().duration(duration).ease(d3.easeLinear)
+                            .attr("cx", xScale(point.mds_x))
+                            .attr("cy", yScale(point.mds_y));
+                    } else {
+                        dot.interrupt()
+                            .attr("cx", xScale(point.mds_x))
+                            .attr("cy", yScale(point.mds_y));
+                    }
                 });
             }
 
             // Slider Config
             d3.select("#timeSlider")
                 .attr("max", maxSteps - 1)
-                .on("input", function() {
+                .on("input", function () {
                     stop();
                     update(+this.value);
                 });
@@ -142,12 +240,16 @@
                 if (isPlaying) return;
                 isPlaying = true;
                 d3.select("#playBtn").text("Pause");
-                
+
                 timer = setInterval(() => {
                     currentStep++;
-                    if (currentStep >= maxSteps) currentStep = 0; // Loop
-                    update(currentStep);
-                }, 100); // 100ms per step
+                    if (currentStep >= maxSteps) {
+                        currentStep = 0;
+                        update(currentStep, 0); // Instant reset to start
+                    } else {
+                        update(currentStep, 1000); // Smooth slide to next
+                    }
+                }, 1000); // 1000ms per step
             }
 
             function stop() {
@@ -156,7 +258,7 @@
                 clearInterval(timer);
             }
 
-            d3.select("#playBtn").on("click", function() {
+            d3.select("#playBtn").on("click", function () {
                 if (isPlaying) stop();
                 else play();
             });
@@ -171,4 +273,5 @@
 
     </script>
 </body>
+
 </html>
