@@ -1,0 +1,240 @@
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.manifold import MDS
+from sklearn.decomposition import PCA
+from sklearn.metrics import pairwise_distances
+
+# --- CONFIGURATION ---
+TARGET_DRIVER = 1 # Max Verstappen
+FEATURES = ['throttle', 'brake', 'n_gear'] # Keep consistent with index
+# Explicitly specific laps to highlight, or None for all
+# HIGHLIGHT_LAPS = [2, 18, 50] 
+HIGHLIGHT_LAPS = None 
+
+def load_data(driver):
+    print(f"Loading data for Driver {driver}...")
+    try:
+        df_car = pd.read_csv(f'data/car_data_{driver}.csv')
+        df_loc = pd.read_csv(f'data/loc_{driver}.csv')
+        df_laps = pd.read_csv(f'data/laps_{driver}.csv')
+    except FileNotFoundError:
+        print(f"  Missing files for {driver}")
+        return None, None
+
+    # Time format conversion
+    df_car['date'] = pd.to_datetime(df_car['date'], format='mixed')
+    df_loc['date'] = pd.to_datetime(df_loc['date'], format='mixed')
+    df_laps['date_start'] = pd.to_datetime(df_laps['date_start'], format='mixed')
+    
+    # Merge car and loc
+    df_car.sort_values('date', inplace=True)
+    df_loc.sort_values('date', inplace=True)
+    
+    merged = pd.merge_asof(
+        df_car, 
+        df_loc[['date', 'x', 'y', 'z']], 
+        on='date', 
+        direction='nearest',
+        tolerance=pd.Timedelta('200ms')
+    )
+    merged.dropna(subset=['x', 'y'], inplace=True)
+    
+    return merged, df_laps
+
+def filter_by_location(df, x_range, y_range):
+    """
+    Filter data points that fall within a bounding box.
+    """
+    mask = (
+        (df['x'] >= x_range[0]) & (df['x'] <= x_range[1]) &
+        (df['y'] >= y_range[0]) & (df['y'] <= y_range[1])
+    )
+    return df[mask].copy()
+
+def analyze_driver_laps():
+    full_data, laps_data = load_data(TARGET_DRIVER)
+    if full_data is None: return
+
+    # 1. Define ROI (S-Curves)
+    # Based on previous analysis or comparison_scurve_data.csv inspection
+    # Let's peek at the comparison data to determine bounds if possible, 
+    # or just use the domain we saw earlier.
+    # Looking at comparison_scurve_data.csv (from prev steps), X seems to be around -6000 to +4000
+    # Y seems to be around -6000 to -1000.
+    # To be safe, let's use the track map logic again or strictly filter by 'Sector 1' logic?
+    # Spatial is safer. Max's data in the csv shows:
+    # x approx: -6144 to 1232 (S-Curves segment we extracted before)
+    # y approx: -2870 to 4104
+    # Wait, the indices in analyze_corner were time-based.
+    # Let's define a box that captures T3-T6.
+    # Rough Estimate from standard Suzuka map data:
+    # X: [-6500, -1000], Y: [-3000, 1000] (Just a guess, likely needs tuning)
+    
+    # Better approach: 
+    # Use the logic from analyze_corner (Lap 2, 15s-45s) to find the bounding box dynamically first!
+    ref_lap = laps_data[laps_data['lap_number'] == 2].iloc[0]
+    t_start = pd.to_datetime(ref_lap['date_start']) + pd.Timedelta(seconds=15)
+    t_end = pd.to_datetime(ref_lap['date_start']) + pd.Timedelta(seconds=45)
+    
+    ref_segment = full_data[
+        (full_data['date'] >= t_start) & (full_data['date'] <= t_end)
+    ]
+    
+    min_x, max_x = ref_segment['x'].min(), ref_segment['x'].max()
+    min_y, max_y = ref_segment['y'].min(), ref_segment['y'].max()
+    
+    print(f"Auto-detected ROI from Lap 2: X[{min_x}, {max_x}], Y[{min_y}, {max_y}]")
+    
+    # Buffers
+    input_box = (min_x - 500, max_x + 500, min_y - 500, max_y + 500)
+
+    # 2. Extract Segments for Every Lap
+    lap_segments = []
+    
+    for _, lap in laps_data.iterrows():
+        lap_num = int(lap['lap_number'])
+        
+        # Get data for this lap duration (roughly)
+        # Note: We can't just filter by time because laps are different lengths.
+        # But we can filter the WHOLE dataset by Location Box, then assign Lap Number.
+        # However, filtering the whole dataset by location might give us disjoint sets if track loops back.
+        # Suzuka crosses over (Figure 8), but S-curves are distinct.
+        # Let's try: Filter by Lap Time -> Then Filter by Box.
+        
+        l_start = lap['date_start']
+        # If it's the last lap, we need an end time. Usually next lap start.
+        # But data/laps has lap_duration.
+        if pd.isna(lap['lap_duration']): 
+            continue # Skip incomplete laps (e.g. Lap 1 sometimes weird or last lap)
+            
+        l_end = l_start + pd.Timedelta(seconds=lap['lap_duration'])
+        
+        lap_df = full_data[(full_data['date'] >= l_start) & (full_data['date'] <= l_end)]
+        
+        # Spatial Filter
+        roi_df = filter_by_location(lap_df, (input_box[0], input_box[1]), (input_box[2], input_box[3]))
+        
+        if len(roi_df) > 10: # Min points to be useful
+            roi_df['lap'] = lap_num
+            lap_segments.append(roi_df)
+    
+    print(f"Extracted {len(lap_segments)} valid lap segments.")
+    
+    combined_laps = pd.concat(lap_segments)
+    
+    # 3. MDS Projection
+    # Normalize features
+    scaler = MinMaxScaler()
+    X_scaled = scaler.fit_transform(combined_laps[FEATURES])
+    
+    # Downsample for speed? (53 laps * ~50 points = 2500 points, MDS handles fine)
+    # But for visual clarity, let's keep it dense.
+    
+    print("Running MDS on multi-lap data...")
+    mds = MDS(n_components=2, dissimilarity='euclidean', random_state=42, n_jobs=-1)
+    pos = mds.fit_transform(X_scaled)
+    
+    # Rotate with PCA
+    pca = PCA(n_components=2)
+    pos = pca.fit_transform(pos)
+    if pos[0,0] > pos[-1,0]: pos[:,0] *= -1
+    
+    combined_laps['mds_x'] = pos[:, 0]
+    combined_laps['mds_y'] = pos[:, 1]
+    
+    # --- Calculate Mean Trajectory ---
+    # To compute a mean, we need to resample/interpolate all laps to a common index base (0% to 100% of segment)
+    # Then average MDS_X and MDS_Y at each step.
+    
+    print("Calculating Mean Trajectory...")
+    mean_resampled = []
+    COMMON_STEPS = 100
+    
+    # Create empty arrays to sum up
+    sum_x = np.zeros(COMMON_STEPS)
+    sum_y = np.zeros(COMMON_STEPS)
+    count = 0
+    
+    for lap_idx in combined_laps['lap'].unique():
+        subset = combined_laps[combined_laps['lap'] == lap_idx]
+        if len(subset) < 5: continue
+        
+        # Original points (assuming sequential index is roughly time)
+        # Better: use 'date' delta from start of segment
+        t = np.linspace(0, 1, len(subset))
+        
+        # Interpolate to common grid
+        x_interp = np.interp(np.linspace(0, 1, COMMON_STEPS), t, subset['mds_x'])
+        y_interp = np.interp(np.linspace(0, 1, COMMON_STEPS), t, subset['mds_y'])
+        
+        sum_x += x_interp
+        sum_y += y_interp
+        count += 1
+        
+    avg_x = sum_x / count
+    avg_y = sum_y / count
+    
+    # Create average lap dataframe
+    mean_df = pd.DataFrame({
+        'lap': [-1] * COMMON_STEPS, # Special ID for Average
+        'mds_x': avg_x,
+        'mds_y': avg_y,
+        'driver': [TARGET_DRIVER] * COMMON_STEPS
+        # Fill other columns with dummy if needed
+    })
+    
+    # Append
+    combined_laps = pd.concat([combined_laps, mean_df], ignore_index=True)
+    
+    
+    # 4. Plotting
+    plt.figure(figsize=(14, 10))
+    
+    # Color map: Laps (Sequential)
+    # Use a colormap like 'viridis' or 'plasma' to show time progression
+    # Early laps = Purple/Blue, Late laps = Yellow
+    
+    cmap = plt.get_cmap('magma_r') # Reverse magma: Dark=Late, Light=Early? Or Viridis.
+    # Let's use 'viridis': Purple(Early) -> Yellow(Late)
+    cmap = plt.get_cmap('viridis')
+    
+    norm = plt.Normalize(vmin=combined_laps['lap'].min(), vmax=combined_laps['lap'].max())
+    
+    # Plot each lap as a line
+    for lap_idx in sorted(combined_laps['lap'].unique()):
+        subset = combined_laps[combined_laps['lap'] == lap_idx]
+        
+        # Color based on lap number
+        color = cmap(norm(lap_idx))
+        
+        # Line width: Thinner for background, thicker for highlights?
+        # Standard:
+        plt.plot(subset['mds_x'], subset['mds_y'], color=color, alpha=0.9, linewidth=1.5)
+        
+        # Optional: Add small dots
+        # plt.scatter(subset['mds_x'], subset['mds_y'], color=color, s=5, alpha=0.5)
+
+    # Add Colorbar
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ax=plt.gca())
+    cbar.set_label('Lap Number')
+    
+    plt.title(f"Driver {TARGET_DRIVER} (Verstappen) Consistency Analysis: S-Curves (Lap 1-{combined_laps['lap'].max()})")
+    plt.xlabel("Similarity Dim 1")
+    plt.ylabel("Similarity Dim 2")
+    plt.grid(True, alpha=0.3)
+    
+    # Save
+    plt.savefig("output/driver_laps_consistency.png", dpi=300)
+    print("Saved plot to output/driver_laps_consistency.png")
+    
+    # Save CSV for potential D3
+    combined_laps.to_csv("output/driver_laps_data.csv", index=False)
+    print("Saved data to output/driver_laps_data.csv")
+
+if __name__ == "__main__":
+    analyze_driver_laps()
