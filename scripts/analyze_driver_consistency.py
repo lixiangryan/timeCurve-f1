@@ -89,26 +89,19 @@ def analyze_driver_laps():
     print(f"Auto-detected ROI from Lap 2: X[{min_x}, {max_x}], Y[{min_y}, {max_y}]")
     
     # Buffers
-    input_box = (min_x - 500, max_x + 500, min_y - 500, max_y + 500)
+    # Increase buffer to 2500 to catch all laps despite GPS drift or line changes
+    input_box = (min_x - 2500, max_x + 2500, min_y - 2500, max_y + 2500)
 
     # 2. Extract Segments for Every Lap
     lap_segments = []
-    
+    FIXED_POINTS = 30  # Downsample to speed up MDS (N^2 complexity)
+
     for _, lap in laps_data.iterrows():
         lap_num = int(lap['lap_number'])
         
-        # Get data for this lap duration (roughly)
-        # Note: We can't just filter by time because laps are different lengths.
-        # But we can filter the WHOLE dataset by Location Box, then assign Lap Number.
-        # However, filtering the whole dataset by location might give us disjoint sets if track loops back.
-        # Suzuka crosses over (Figure 8), but S-curves are distinct.
-        # Let's try: Filter by Lap Time -> Then Filter by Box.
-        
         l_start = lap['date_start']
-        # If it's the last lap, we need an end time. Usually next lap start.
-        # But data/laps has lap_duration.
         if pd.isna(lap['lap_duration']): 
-            continue # Skip incomplete laps (e.g. Lap 1 sometimes weird or last lap)
+            continue
             
         l_end = l_start + pd.Timedelta(seconds=lap['lap_duration'])
         
@@ -117,12 +110,33 @@ def analyze_driver_laps():
         # Spatial Filter
         roi_df = filter_by_location(lap_df, (input_box[0], input_box[1]), (input_box[2], input_box[3]))
         
-        if len(roi_df) > 10: # Min points to be useful
-            roi_df['lap'] = lap_num
-            lap_segments.append(roi_df)
+        if len(roi_df) > 5:
+            # Resample to fixed number of points using interpolation
+            # Create a localized 0-1 index
+            t_orig = np.linspace(0, 1, len(roi_df))
+            t_new = np.linspace(0, 1, FIXED_POINTS)
+            
+            resampled_data = {
+                'lap': [lap_num] * FIXED_POINTS,
+                # Interpolate Features and Coords
+                # We need x, y for plotting context if needed (not strictly used by MDS but good to have)
+                'x': np.interp(t_new, t_orig, roi_df['x']),
+                'y': np.interp(t_new, t_orig, roi_df['y'])
+            }
+            
+            # Interpolate Features
+            for feat in FEATURES:
+                resampled_data[feat] = np.interp(t_new, t_orig, roi_df[feat])
+                
+            resampled_df = pd.DataFrame(resampled_data)
+            lap_segments.append(resampled_df)
     
-    print(f"Extracted {len(lap_segments)} valid lap segments.")
+    print(f"Extracted {len(lap_segments)} valid lap segments (resampled to {FIXED_POINTS} points each).")
     
+    if not lap_segments:
+        print("No data found in ROI.")
+        return
+
     combined_laps = pd.concat(lap_segments)
     
     # 3. MDS Projection

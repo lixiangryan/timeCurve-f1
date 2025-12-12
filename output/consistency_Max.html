@@ -108,10 +108,18 @@
     <p>Visualizing how execution of the S-Curves changes throughout the race.</p>
 
     <div class="controls">
-        <button id="playBtn">Play Laps</button>
-        <div style="margin-top: 15px;">
-            <label for="lapSlider">Lap: <span id="lapDisplay">1</span></label>
-            <input type="range" id="lapSlider" min="1" max="53" value="1" style="width: 400px; margin-left: 10px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div>
+                <label for="lapSelect" style="color: #ccc; margin-right: 5px;">Select Lap:</label>
+                <select id="lapSelect"
+                    style="background: #333; color: white; border: 1px solid #555; padding: 5px; border-radius: 4px;">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+
+            <div style="flex-grow: 1; text-align: left;">
+                <input type="range" id="lapSlider" min="1" max="53" value="1" style="width: 100%;">
+            </div>
         </div>
         <div class="color-bar-container">
             <span>Lap 1 (Early)</span>
@@ -222,10 +230,14 @@
             let currentLap = laps[0][0]; // Start at first available lap
             const minLap = currentLap;
             const maxLap = d3.max(lapData, d => d.lap);
-            let isPlaying = false;
-            let timer;
 
-            // Update Slider Range
+            // Populate Dropdown
+            const select = d3.select("#lapSelect");
+            laps.forEach(l => {
+                select.append("option").text(`Lap ${l[0]}`).attr("value", l[0]);
+            });
+
+            // Update SLIDER Range
             d3.select("#lapSlider")
                 .attr("min", minLap)
                 .attr("max", maxLap)
@@ -233,8 +245,9 @@
 
             function update(lapNum) {
                 currentLap = lapNum;
-                d3.select("#lapDisplay").text(lapNum);
+                // Sync UI
                 d3.select("#lapSlider").property("value", lapNum);
+                d3.select("#lapSelect").property("value", lapNum);
 
                 // Reset all
                 paths.classed("active", false)
@@ -251,9 +264,8 @@
                 const activeLapData = laps.find(l => l[0] === lapNum);
                 if (activeLapData && meanData.length > 0) {
                     // For simplicity, connect the first point of the active lap to the first point of the mean trajectory
-                    // A more sophisticated approach might find the closest point or use a specific index if data aligns.
                     const activePoint = activeLapData[1][0]; // First point of the active lap
-                    const meanPoint = meanData[0]; // First point of the mean trajectory (assuming meanData is ordered similarly)
+                    const meanPoint = meanData[0]; // First point of the mean trajectory
 
                     if (activePoint && meanPoint) {
                         devLine.attr("x1", xScale(activePoint.mds_x))
@@ -263,41 +275,20 @@
                             .attr("opacity", 1)
                             .raise(); // Bring to front
                     } else {
-                        devLine.attr("opacity", 0); // Hide if points not found
+                        devLine.attr("opacity", 0);
                     }
                 } else {
-                    devLine.attr("opacity", 0); // Hide if no active lap data or mean data
+                    devLine.attr("opacity", 0);
                 }
             }
 
-            // Slider Event
+            // Events
             d3.select("#lapSlider").on("input", function () {
-                stop();
                 update(+this.value);
             });
 
-            // Play/Pause
-            function play() {
-                if (isPlaying) return;
-                isPlaying = true;
-                d3.select("#playBtn").text("Pause");
-
-                timer = setInterval(() => {
-                    currentLap++;
-                    if (currentLap > maxLap) currentLap = minLap;
-                    update(currentLap);
-                }, 200); // Fast cycle per lap
-            }
-
-            function stop() {
-                isPlaying = false;
-                d3.select("#playBtn").text("Play Laps");
-                clearInterval(timer);
-            }
-
-            d3.select("#playBtn").on("click", function () {
-                if (isPlaying) stop();
-                else play();
+            d3.select("#lapSelect").on("change", function () {
+                update(+this.value);
             });
 
             // Init

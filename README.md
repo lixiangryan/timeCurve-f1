@@ -87,17 +87,17 @@ python utils/fetch_f1_data.py
     *   速度: **225 km/h** | 煞車: **0%** | 油門: **94% (幾近全油)**
     *   *解讀*: 在同一時刻，Perez 尚未開始重煞或選擇以更高底速過彎，這顯示了兩者在車輛調校或駕駛習慣上的根本差異。
 
-### 3. 車手一致性分析 (Driver Consistency - `output/consistency.html`)
+### 3. 車手一致性分析 (Driver Consistency - `output/consistency_Max.html`)
 我們深入分析了 **Max Verstappen** 在 53 圈比賽中，每一次通過 S 彎的操作重疊圖。
 - **背景 (Ghost Lines)**：顯示了整場比賽的所有軌跡。較窄的通道代表極高的穩定性。
 - **演變 (Evolution)**：
     - 通過觀察顏色從紫色（早期）漸變到黃色（晚期），可以發現隨著輪胎耗損，操作軌跡是否發生偏移。
     - 離群值 (Outliers) 通常對應到被套圈車阻擋或失誤的單圈。
 
-### 4. 互動式視覺化 (`output/index.html` & `output/consistency.html`)
+### 4. 互動式視覺化 (`output/index.html` & `output/consistency_Max.html`)
 靜態圖表難以呈現時間差。請開啟此網頁文件：
 - **[主比較] index.html**: 三位車手 (Max, Perez, Tsunoda) 的動態追逐。
-- **[新功能] consistency.html**: 單一車手 (Max) 的 53 圈演變動畫。使用滑桿查看每一圈的差異。
+- **[新功能] consistency_Max.html**: 單一車手 (Max) 的 53 圈演變動畫。使用滑桿查看每一圈的差異。
 - 網頁內均包含詳細的 **「圖表解讀指南 (How to Read)」**。
 - **注意 (Known Observation)**：目前的資料點之間的時間間隔並非固定，約在 **0.4秒 ~ 1.3秒** 之間浮動。這是由於資料來源的不規則性與合併策略所致，目前保留此特性以忠實呈現原始資料的分佈狀況。
 - 透過拖動時間軸，您可以精確重現上述「Max 重煞 vs Perez 衝刺」的關鍵瞬間。
