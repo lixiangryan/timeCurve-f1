@@ -159,49 +159,42 @@ def analyze_driver_laps():
     combined_laps['mds_x'] = pos[:, 0]
     combined_laps['mds_y'] = pos[:, 1]
     
-    # --- Calculate Mean Trajectory ---
-    # To compute a mean, we need to resample/interpolate all laps to a common index base (0% to 100% of segment)
-    # Then average MDS_X and MDS_Y at each step.
+    # --- Find Fastest Lap ---
+    # Instead of averaging all laps, use the fastest lap as reference
     
-    print("Calculating Mean Trajectory...")
-    mean_resampled = []
-    COMMON_STEPS = 100
+    print("Finding Fastest Lap...")
     
-    # Create empty arrays to sum up
-    sum_x = np.zeros(COMMON_STEPS)
-    sum_y = np.zeros(COMMON_STEPS)
-    count = 0
+    # Find the lap with minimum duration
+    fastest_lap_row = laps_data.loc[laps_data['lap_duration'].idxmin()]
+    fastest_lap_num = int(fastest_lap_row['lap_number'])
+    fastest_lap_time = fastest_lap_row['lap_duration']
     
-    for lap_idx in combined_laps['lap'].unique():
-        subset = combined_laps[combined_laps['lap'] == lap_idx]
-        if len(subset) < 5: continue
+    print(f"Fastest Lap: {fastest_lap_num} (Duration: {fastest_lap_time:.3f}s)")
+    
+    # Extract fastest lap data from combined_laps
+    fastest_lap_data = combined_laps[combined_laps['lap'] == fastest_lap_num].copy()
+    
+    if len(fastest_lap_data) > 0:
+        # Resample to common steps for consistent comparison
+        COMMON_STEPS = 100
+        t = np.linspace(0, 1, len(fastest_lap_data))
         
-        # Original points (assuming sequential index is roughly time)
-        # Better: use 'date' delta from start of segment
-        t = np.linspace(0, 1, len(subset))
+        fastest_x = np.interp(np.linspace(0, 1, COMMON_STEPS), t, fastest_lap_data['mds_x'])
+        fastest_y = np.interp(np.linspace(0, 1, COMMON_STEPS), t, fastest_lap_data['mds_y'])
         
-        # Interpolate to common grid
-        x_interp = np.interp(np.linspace(0, 1, COMMON_STEPS), t, subset['mds_x'])
-        y_interp = np.interp(np.linspace(0, 1, COMMON_STEPS), t, subset['mds_y'])
+        # Create fastest lap reference dataframe
+        fastest_df = pd.DataFrame({
+            'lap': [-1] * COMMON_STEPS,  # Special ID for Fastest Lap Reference
+            'mds_x': fastest_x,
+            'mds_y': fastest_y,
+            'driver': [TARGET_DRIVER] * COMMON_STEPS
+        })
         
-        sum_x += x_interp
-        sum_y += y_interp
-        count += 1
-        
-    avg_x = sum_x / count
-    avg_y = sum_y / count
+        # Append
+        combined_laps = pd.concat([combined_laps, fastest_df], ignore_index=True)
+    else:
+        print(f"Warning: Fastest lap {fastest_lap_num} data not found in ROI.")
     
-    # Create average lap dataframe
-    mean_df = pd.DataFrame({
-        'lap': [-1] * COMMON_STEPS, # Special ID for Average
-        'mds_x': avg_x,
-        'mds_y': avg_y,
-        'driver': [TARGET_DRIVER] * COMMON_STEPS
-        # Fill other columns with dummy if needed
-    })
-    
-    # Append
-    combined_laps = pd.concat([combined_laps, mean_df], ignore_index=True)
     
     
     # 4. Plotting

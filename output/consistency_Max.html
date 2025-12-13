@@ -117,6 +117,13 @@
                 </select>
             </div>
 
+            <div>
+                <button id="playButton"
+                    style="background: #e10600; color: white; border: none; padding: 8px 16px; font-size: 16px; cursor: pointer; border-radius: 4px;">
+                    ▶ Play
+                </button>
+            </div>
+
             <div style="flex-grow: 1; text-align: left;">
                 <input type="range" id="lapSlider" min="1" max="53" value="1" style="width: 100%;">
             </div>
@@ -136,15 +143,15 @@
         <p>此圖展示了 Max Verstappen 在<strong>每一圈</strong>經過 S 彎時的操作特徵投影。</p>
         <p>
             <strong>1. 一致性 (Consistency)：</strong><br>
-            <span style="color: #666; font-weight: bold;">--- 灰色虛線</span> 代表整場比賽的<strong>平均軌跡 (Mean
-                Trajectory)</strong>。<br>
-            當前圈數（紅色實線）若與虛線重合，代表操作標準；若偏離，則代表該圈有獨特的操作模式。
+            <span style="color: white; font-weight: bold;">--- 白色虛線</span> 代表整場比賽的<strong>最快圈 (Fastest
+                Lap)</strong>。<br>
+            當前圈數（高亮線）若與虛線重合，代表操作接近最佳表現；若偏離，則代表該圈的操作與最快圈有差異。
         </p>
         <p>
             <strong>2. 演變 (Evolution)：</strong><br>
-            試著拖動滑桿或播放動畫，觀察紅色高亮線的移動。<br>
+            試著拖動滑桿或選擇圈數，觀察高亮線的移動。<br>
         <ul>
-            <li><strong>紅色連結線</strong>：顯示當前位置與平均軌跡的差異。線越長，差異越大。</li>
+            <li><strong>紅色連結線</strong>：顯示當前圈與最快圈的起點差異。線越長，差異越大。</li>
             <li>是否有<strong>向某一側飄移</strong>的趨勢？(可能代表輪胎衰退導致煞車點改變)</li>
         </ul>
         </p>
@@ -176,8 +183,8 @@
                 d.lap = +d.lap;
             });
 
-            // Separate Mean vs Laps
-            const meanData = data.filter(d => d.lap === -1);
+            // Separate Fastest Lap (lap=-1) vs Regular Laps
+            const meanData = data.filter(d => d.lap === -1);  // meanData stores fastest lap for compatibility
             const lapData = data.filter(d => d.lap !== -1);
 
             // Scales
@@ -195,14 +202,14 @@
                 .y(d => yScale(d.mds_y))
                 .curve(d3.curveCatmullRom.alpha(0.5));
 
-            // Draw Mean Trajectory (Reference)
+            // Draw Fastest Lap (Reference)
             if (meanData.length > 0) {
                 g.append("path")
                     .datum(meanData)
                     .attr("class", "mean-line")
                     .attr("d", line)
                     .attr("fill", "none")
-                    .attr("stroke", "#666")
+                    .attr("stroke", "white")
                     .attr("stroke-width", 2)
                     .attr("stroke-dasharray", "5,5")
                     .attr("opacity", 0.5);
@@ -263,9 +270,9 @@
                 // Update Deviation Line
                 const activeLapData = laps.find(l => l[0] === lapNum);
                 if (activeLapData && meanData.length > 0) {
-                    // For simplicity, connect the first point of the active lap to the first point of the mean trajectory
+                    // Connect the first point of the active lap to the first point of the fastest lap
                     const activePoint = activeLapData[1][0]; // First point of the active lap
-                    const meanPoint = meanData[0]; // First point of the mean trajectory
+                    const meanPoint = meanData[0]; // First point of the fastest lap
 
                     if (activePoint && meanPoint) {
                         devLine.attr("x1", xScale(activePoint.mds_x))
@@ -282,17 +289,64 @@
                 }
             }
 
+            // Play/Pause state variables (must be declared before event handlers)
+            let isPlaying = false;
+            let playInterval = null;
+            const playButton = d3.select("#playButton");
+
             // Events
             d3.select("#lapSlider").on("input", function () {
+                // Stop playing if user manually changes lap
+                if (isPlaying) {
+                    clearInterval(playInterval);
+                    playInterval = null;
+                    isPlaying = false;
+                    playButton.text("▶ Play");
+                }
                 update(+this.value);
             });
 
             d3.select("#lapSelect").on("change", function () {
+                // Stop playing if user manually changes lap
+                if (isPlaying) {
+                    clearInterval(playInterval);
+                    playInterval = null;
+                    isPlaying = false;
+                    playButton.text("▶ Play");
+                }
                 update(+this.value);
             });
 
             // Init
             update(minLap);
+
+            // Play/Pause button click handler
+            playButton.on("click", function () {
+                if (isPlaying) {
+                    // Pause
+                    clearInterval(playInterval);
+                    playInterval = null;
+                    isPlaying = false;
+                    playButton.text("▶ Play");
+                } else {
+                    // Play
+                    isPlaying = true;
+                    playButton.text("⏸ Pause");
+
+                    playInterval = setInterval(() => {
+                        // Advance to next lap
+                        currentLap++;
+
+                        // Loop back to start if we reach the end
+                        if (currentLap > maxLap) {
+                            currentLap = minLap;
+                        }
+
+                        update(currentLap);
+                    }, 800); // 0.8 seconds
+                }
+            });
+
 
         }).catch(err => {
             console.error(err);

@@ -105,8 +105,163 @@ python utils/fetch_f1_data.py
 
 ---
 
-## 🚀 下一步計畫
-1. **(已完成)** `scripts/generate_time_curve.py` 基礎版本，可讀取 `data/` 中的 CSV 並計算 MDS。
-2. **(已完成)** `scripts/analyze_corner.py` 完成 S 彎切片與多車手比較。
-3. **(已完成)** `scripts/interpret_divergence.py` 自動化尋找駕駛風格差異點。
-4. **(已完成)** `output/index.html` 實作 D3.js 互動式動畫。
+## 🚀 Scripts 使用說明
+
+本專案提供 4 個分析腳本,請按照以下順序執行以完成完整分析流程:
+
+### 1. `generate_time_curve.py` - 生成 Time Curve
+
+**功能:**  
+為每位車手生成完整比賽的 Time Curve 視覺化,展示整個比賽過程中駕駛狀態的演變。
+
+**執行方式:**
+```bash
+python scripts/generate_time_curve.py
+```
+
+**主要參數 (腳本內設定):**
+- `drivers = [1, 11, 22]` - 分析的車手編號 (1=Verstappen, 11=Perez, 22=Tsunoda)
+- `features = ['speed', 'throttle', 'brake', 'n_gear', 'rpm', 'drs']` - 使用的特徵
+- `SAMPLE_RATE = 10` - 降採樣率 (每 10 個點取 1 個)
+
+**輸出檔案:**
+- `data/time_curve_{driver}.csv` - 2D 投影座標與時間進度
+- `data/time_curve_{driver}.png` - Time Curve 視覺化圖表
+
+**圖表解讀:**
+- **迴圈 (Loops)**: 每個迴圈代表一圈比賽
+- **顏色**: 紫色 (起始) → 黃色 (結束),顯示時間進程
+- **起點/終點**: 綠色 (Start) / 紅色 (End) 標記
+
+---
+
+### 2. `analyze_corner.py` - S 彎道多車手比較
+
+**功能:**  
+分析多位車手在鈴鹿 S 彎 (Sector 1, T3-T7) 的駕駛風格差異,將不同車手投影到同一個相似度空間中。
+
+**執行方式:**
+```bash
+python scripts/analyze_corner.py
+```
+
+**主要參數 (腳本內設定):**
+- `TARGET_DRIVERS = [1, 11, 22]` - 比較的車手
+- `FEATURES = ['throttle', 'brake', 'n_gear']` - 專注於操作特徵
+- 時間窗口: Lap 5 的第 15-45 秒 (涵蓋 S 彎區段)
+
+**輸出檔案:**
+- `output/track_map_full.png` - 完整賽道地圖
+- `output/roi_check.png` - ROI (S 彎區域) 確認圖
+- `output/comparison_scurve.png` - 三位車手的 S 彎比較圖
+- `output/comparison_scurve_data.csv` - 原始數據 (供後續分析使用)
+
+**圖表解讀:**
+- **軌跡重疊**: 駕駛方式相似
+- **軌跡分歧**: 駕駛風格差異 (煞車點、入彎速度等)
+- 每位車手以不同顏色標示,起點 (○) 和終點 (×) 清楚標記
+
+---
+
+### 3. `interpret_divergence.py` - 自動分析駕駛差異
+
+**功能:**  
+自動找出 Max Verstappen 與 Sergio Perez 在 S 彎中**差異最大的瞬間**,並輸出該時刻的詳細遙測數據。
+
+**執行方式:**
+```bash
+python scripts/interpret_divergence.py
+```
+
+**前置條件:**  
+必須先執行 `analyze_corner.py` 生成 `comparison_scurve_data.csv`
+
+**輸出檔案:**
+- `output/divergence_report.txt` - 詳細的差異分析報告
+
+**報告內容:**
+- 最大分歧點的索引位置
+- 相似度空間中的歐幾里得距離
+- 兩位車手在該瞬間的完整狀態:
+  - 速度 (speed)
+  - 油門 (throttle) / 煞車 (brake)
+  - 檔位 (n_gear)
+  - 引擎轉速 (rpm)
+
+**關鍵發現範例:**
+- Max: 激進重煞 (209 km/h, 100% brake)
+- Perez: 高速滑行 (225 km/h, 94% throttle)
+
+---
+
+### 4. `analyze_driver_consistency.py` - 車手一致性分析
+
+**功能:**  
+深入分析**單一車手**在整場比賽中,每一圈通過 S 彎的操作一致性,生成互動式視覺化。
+
+**執行方式:**
+```bash
+python scripts/analyze_driver_consistency.py
+```
+
+**主要參數 (腳本內設定):**
+- `TARGET_DRIVER = 1` - 分析的車手 (預設為 Max Verstappen)
+- `FEATURES = ['throttle', 'brake', 'n_gear']`
+- `FIXED_POINTS = 30` - 每圈重採樣點數
+- `HIGHLIGHT_LAPS = None` - 可指定特定圈次高亮 (例如 `[2, 18, 50]`)
+
+**輸出檔案:**
+- `output/driver_laps_consistency.png` - 所有圈次疊加的靜態圖
+- `output/driver_laps_data.csv` - 每圈的 MDS 座標數據
+
+**圖表解讀:**
+- **背景軌跡**: 所有 53 圈的淡化疊加,展示整體一致性
+- **顏色映射**: 紫色 (早期圈次) → 黃色 (晚期圈次)
+- **軌跡寬度**: 越窄代表越穩定
+- **偏移趨勢**: 觀察輪胎衰退對操作的影響
+
+**互動式網頁版:**  
+搭配 `output/consistency_Max.html` 使用,可以:
+- 滑桿選擇特定圈次
+- 查看該圈與平均軌跡的差異
+- 紅色連結線顯示偏離程度
+
+---
+
+## 📖 快速開始 (Quick Start)
+
+如果您是第一次使用本專案,請依照以下步驟操作:
+
+1. **安裝環境:**
+   ```bash
+   conda create -n lix_f1 python=3.10 -y
+   conda activate lix_f1
+   pip install -r requirements.txt
+   pip install matplotlib seaborn  # 額外依賴
+   ```
+
+2. **下載資料 (如果尚未下載):**
+   ```bash
+   python utils/fetch_f1_data.py
+   ```
+
+3. **執行分析流程:**
+   ```bash
+   # Step 1: 生成完整 Time Curve
+   python scripts/generate_time_curve.py
+   
+   # Step 2: 分析 S 彎比較
+   python scripts/analyze_corner.py
+   
+   # Step 3: 找出駕駛差異點
+   python scripts/interpret_divergence.py
+   
+   # Step 4: 分析單一車手一致性
+   python scripts/analyze_driver_consistency.py
+   ```
+
+4. **查看結果:**
+   - 靜態圖表: `output/` 目錄下的 PNG 檔案
+   - 互動式網頁: 在瀏覽器開啟 `output/index.html` 和 `output/consistency_Max.html`
+
+---
