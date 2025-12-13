@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>F1 Driver Consistency Analysis: Verstappen S-Curves</title>
+    <title>F1 Driver Consistency Analysis: Tsunoda S-Curves</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         body {
@@ -104,7 +104,7 @@
 
 <body>
 
-    <h1>Driver Consistency: Max Verstappen (Lap Evolution)</h1>
+    <h1>Driver Consistency: Yuki Tsunoda (Lap Evolution)</h1>
     <p>Visualizing how execution of the S-Curves changes throughout the race.</p>
 
     <div class="controls">
@@ -140,7 +140,7 @@
 
     <div class="explanation">
         <h2>📊 如何解讀此圖表 (How to Read)</h2>
-        <p>此圖展示了 Max Verstappen 在<strong>每一圈</strong>經過 S 彎時的操作特徵投影。</p>
+        <p>此圖展示了 Yuki Tsunoda 在<strong>每一圈</strong>經過 S 彎時的操作特徵投影。</p>
         <p>
             <strong>1. 一致性 (Consistency)：</strong><br>
             <span style="color: white; font-weight: bold;">— 白色實線</span> 代表整場比賽的<strong>最快圈 (Fastest Lap)</strong>。<br>
@@ -173,7 +173,7 @@
         // Viridis: Early = Purple, Late = Yellow
         const colorScale = d3.scaleSequential(d3.interpolateViridis).domain([1, 53]);
 
-        d3.csv("driver_laps_data.csv").then(data => {
+        d3.csv("driver_laps_data_Tsunoda.csv").then(data => {
 
             // Parse numbers
             data.forEach(d => {

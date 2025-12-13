@@ -87,21 +87,36 @@ python utils/fetch_f1_data.py
     *   速度: **225 km/h** | 煞車: **0%** | 油門: **94% (幾近全油)**
     *   *解讀*: 在同一時刻，Perez 尚未開始重煞或選擇以更高底速過彎，這顯示了兩者在車輛調校或駕駛習慣上的根本差異。
 
-### 3. 車手一致性分析 (Driver Consistency - `output/consistency_Max.html`)
+### 3. 車手一致性分析 (`output/consistency_Max.html`)
 我們深入分析了 **Max Verstappen** 在 53 圈比賽中，每一次通過 S 彎的操作重疊圖。
-- **背景 (Ghost Lines)**：顯示了整場比賽的所有軌跡。較窄的通道代表極高的穩定性。
+- **白色虛線參考**: 代表 **Lap 50 (最快圈, 93.706秒)**，作為最佳表現的基準。
+- **背景軌跡**: 顯示了整場比賽的所有 52 圈。較窄的通道代表極高的穩定性。
 - **演變 (Evolution)**：
     - 通過觀察顏色從紫色（早期）漸變到黃色（晚期），可以發現隨著輪胎耗損，操作軌跡是否發生偏移。
     - 離群值 (Outliers) 通常對應到被套圈車阻擋或失誤的單圈。
+- **互動功能**:
+    - ▶️ **播放按鈕**: 自動以 0.8 秒間隔循環播放所有圈次
+    - 滑桿或下拉選單可查看特定圈次與最快圈的差異
+    - 紅色連結線顯示當前圈與最快圈起點的偏移距離
 
-### 4. 互動式視覺化 (`output/index.html` & `output/consistency_Max.html`)
-靜態圖表難以呈現時間差。請開啟此網頁文件：
-- **[主比較] index.html**: 三位車手 (Max, Perez, Tsunoda) 的動態追逐。
-- **[新功能] consistency_Max.html**: 單一車手 (Max) 的 53 圈演變動畫。使用滑桿查看每一圈的差異。
-- 網頁內均包含詳細的 **「圖表解讀指南 (How to Read)」**。
-- **注意 (Known Observation)**：目前的資料點之間的時間間隔並非固定，約在 **0.4秒 ~ 1.3秒** 之間浮動。這是由於資料來源的不規則性與合併策略所致，目前保留此特性以忠實呈現原始資料的分佈狀況。
-- 透過拖動時間軸，您可以精確重現上述「Max 重煞 vs Perez 衝刺」的關鍵瞬間。
-- **圖表解讀指南**: 網頁下方已新增詳細說明，解釋相似度空間 (Similiarity Space) 的 X/Y 軸意義與觀察重點。
+### 4. 車手風格對比 (`output/driver_styles_comparison.html`)
+比較三位車手在 S 彎的**平均駕駛風格**（所有圈次的平均操作模式）。
+- **顏色區分**:
+    - 🟣 **Verstappen**: 紫色 - 最快車手 (93.706秒)
+    - 🔵 **Perez**: 藍色 - 第二快 (93.945秒，慢 0.239秒)
+    - 🟡 **Tsunoda**: 黃色 - AlphaTauri 車手 (96.342秒，慢 2.636秒)
+- **風格差異觀察**:
+    - **Red Bull 隊友 (Max vs Perez)**: 相同賽車，差異純粹來自個人駕駛習慣
+    - **跨車隊對比 (vs Tsunoda)**: 包含賽車性能差異，AlphaTauri 明顯較慢
+- **互動功能**: 點擊按鈕可單獨顯示某位車手或顯示全部對比
+
+### 5. 互動式視覺化總覽
+靜態圖表難以呈現時間差。本專案提供三個互動式網頁：
+- **`index.html`**: 三位車手 (Max, Perez, Tsunoda) 的 S 彎動態追逐，可拖動時間軸精確重現關鍵瞬間
+- **`consistency_Max.html`**: Max Verstappen 單一車手的 53 圈演變，附播放功能
+- **`driver_styles_comparison.html`**: 三位車手平均風格對比，可切換顯示
+- 網頁內均包含詳細的 **「圖表解讀指南 (How to Read)」**
+- **注意**: 資料點之間的時間間隔約在 **0.4秒 ~ 1.3秒** 之間浮動，這是由於資料來源的不規則性，目前保留此特性以忠實呈現原始資料
 
 ---
 
@@ -215,16 +230,54 @@ python scripts/analyze_driver_consistency.py
 - `output/driver_laps_data.csv` - 每圈的 MDS 座標數據
 
 **圖表解讀:**
-- **背景軌跡**: 所有 53 圈的淡化疊加,展示整體一致性
+- **白色虛線**: 代表最快圈 (Lap 50, 93.706秒) 作為參考基準
+- **背景軌跡**: 所有 52 圈的淡化疊加,展示整體一致性
 - **顏色映射**: 紫色 (早期圈次) → 黃色 (晚期圈次)
 - **軌跡寬度**: 越窄代表越穩定
 - **偏移趨勢**: 觀察輪胎衰退對操作的影響
 
 **互動式網頁版:**  
 搭配 `output/consistency_Max.html` 使用,可以:
-- 滑桿選擇特定圈次
-- 查看該圈與平均軌跡的差異
-- 紅色連結線顯示偏離程度
+- ▶️ **播放功能**: 以 0.8 秒間隔自動循環播放所有圈次
+- 滑桿或下拉選單選擇特定圈次
+- 查看該圈與最快圈的差異
+- 紅色連結線顯示當前圈與最快圈起點的偏離距離
+
+---
+
+### 5. `compare_driver_styles.py` - 車手風格對比分析
+
+**功能:**  
+比較三位車手在 S 彎的**平均駕駛風格**,計算每位車手所有圈次的平均操作模式並投影到同一相似度空間。
+
+**執行方式:**
+```bash
+python scripts/compare_driver_styles.py
+```
+
+**主要參數 (腳本內設定):**
+- `TARGET_DRIVERS = [1, 11, 22]` - 比較的車手 (Verstappen, Perez, Tsunoda)
+- `FEATURES = ['throttle', 'brake', 'n_gear']` - 分析的操作特徵
+- `FIXED_POINTS = 30` - 每圈重採樣點數
+- `COMMON_STEPS = 100` - 平均軌跡的最終點數
+
+**輸出檔案:**
+- `output/driver_average_styles.csv` - 三位車手的平均軌跡數據
+- `output/driver_average_styles.png` - 靜態對比圖
+
+**圖表解讀:**
+- **顏色區分**:
+  - 🟣 紫色 = Verstappen (最快: 93.706秒)
+  - 🔵 藍色 = Perez (慢 0.239秒)
+  - 🟡 黃色 = Tsunoda (慢 2.636秒)
+- **軌跡重疊**: 代表相似的平均駕駛風格
+- **軌跡分歧**: 顯示操作習慣或賽車性能的差異
+
+**互動式網頁版:**  
+搭配 `output/driver_styles_comparison.html` 使用,可以:
+- 點擊按鈕切換顯示模式 (全部/單一車手)
+- 清楚觀察 Red Bull 隊友間的風格差異
+- 對比不同車隊(AlphaTauri)的性能影響
 
 ---
 
@@ -258,10 +311,16 @@ python scripts/analyze_driver_consistency.py
    
    # Step 4: 分析單一車手一致性
    python scripts/analyze_driver_consistency.py
+   
+   # Step 5: 比較三位車手平均風格
+   python scripts/compare_driver_styles.py
    ```
 
 4. **查看結果:**
    - 靜態圖表: `output/` 目錄下的 PNG 檔案
-   - 互動式網頁: 在瀏覽器開啟 `output/index.html` 和 `output/consistency_Max.html`
+   - 互動式網頁: 在瀏覽器開啟
+     - `output/index.html` - 三車手 S 彎動態追逐
+     - `output/consistency_Max.html` - Max 一致性分析 (附播放功能)
+     - `output/driver_styles_comparison.html` - 平均風格對比
 
 ---

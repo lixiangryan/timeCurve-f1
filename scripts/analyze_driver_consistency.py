@@ -6,9 +6,12 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 from sklearn.metrics import pairwise_distances
+import sys
 
 # --- CONFIGURATION ---
-TARGET_DRIVER = 1 # Max Verstappen
+# Accept driver number from command line, default to Verstappen
+TARGET_DRIVER = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+DRIVER_NAMES = {1: 'Verstappen', 11: 'Perez', 22: 'Tsunoda'}
 FEATURES = ['throttle', 'brake', 'n_gear'] # Keep consistent with index
 # Explicitly specific laps to highlight, or None for all
 # HIGHLIGHT_LAPS = [2, 18, 50] 
@@ -230,18 +233,19 @@ def analyze_driver_laps():
     cbar = plt.colorbar(sm, ax=plt.gca())
     cbar.set_label('Lap Number')
     
-    plt.title(f"Driver {TARGET_DRIVER} (Verstappen) Consistency Analysis: S-Curves (Lap 1-{combined_laps['lap'].max()})")
+    plt.title(f"Driver {TARGET_DRIVER} ({DRIVER_NAMES[TARGET_DRIVER]}) Consistency Analysis: S-Curves (Lap 1-{combined_laps['lap'].max()})")
     plt.xlabel("Similarity Dim 1")
     plt.ylabel("Similarity Dim 2")
     plt.grid(True, alpha=0.3)
     
-    # Save
-    plt.savefig("output/driver_laps_consistency.png", dpi=300)
-    print("Saved plot to output/driver_laps_consistency.png")
+    # Save with driver-specific filenames
+    driver_name = DRIVER_NAMES[TARGET_DRIVER]
+    plt.savefig(f"output/driver_laps_consistency_{driver_name}.png", dpi=300)
+    print(f"Saved plot to output/driver_laps_consistency_{driver_name}.png")
     
     # Save CSV for potential D3
-    combined_laps.to_csv("output/driver_laps_data.csv", index=False)
-    print("Saved data to output/driver_laps_data.csv")
+    combined_laps.to_csv(f"output/driver_laps_data_{driver_name}.csv", index=False)
+    print(f"Saved data to output/driver_laps_data_{driver_name}.csv")
 
 if __name__ == "__main__":
     analyze_driver_laps()
