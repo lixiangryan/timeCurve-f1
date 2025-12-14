@@ -174,8 +174,8 @@ python scripts/generate_time_curve.py
 - `SAMPLE_RATE = 10` - 降採樣率 (每 10 個點取 1 個)
 
 **輸出檔案:**
-- `data/time_curve_{driver}.csv` - 2D 投影座標與時間進度
-- `data/time_curve_{driver}.png` - Time Curve 視覺化圖表
+- `output/time_curve_{driver}.csv` - 2D 投影座標與時間進度
+- `output/time_curve_{driver}.png` - Time Curve 視覺化圖表
 
 **圖表解讀:**
 - **迴圈 (Loops)**: 每個迴圈代表一圈比賽
@@ -357,6 +357,7 @@ python scripts/compare_driver_styles.py
 
 4. **查看結果:**
    - 靜態圖表: `output/` 目錄下的 PNG 檔案
+   - **圖庫預覽 (Quick Preview)**: [**GALLERY.md**](output/GALLERY.md) (直接在 GitHub 查看所有圖表)
    - 互動式網頁 (共6個): 在瀏覽器開啟
      - `output/index.html` - 三車手 S 彎動態追逐
      - `output/consistency_Max.html` - Verstappen 一致性 (播放功能)

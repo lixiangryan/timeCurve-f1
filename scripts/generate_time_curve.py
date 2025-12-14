@@ -68,7 +68,7 @@ def generate_time_curve(driver_number):
     time_progress = np.linspace(0, 1, len(result_df))
     result_df['progress'] = time_progress
     
-    csv_path = f'data/time_curve_{driver_number}.csv'
+    csv_path = f'output/time_curve_{driver_number}.csv'
     result_df.to_csv(csv_path, index=False)
     print(f"Coordinates saved to {csv_path}")
 
@@ -105,7 +105,7 @@ def generate_time_curve(driver_number):
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    img_path = f'data/time_curve_{driver_number}.png'
+    img_path = f'output/time_curve_{driver_number}.png'
     plt.savefig(img_path, dpi=150)
     print(f"Plot saved to {img_path}")
     # plt.show()
