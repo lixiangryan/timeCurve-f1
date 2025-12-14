@@ -87,20 +87,37 @@ python utils/fetch_f1_data.py
     *   速度: **225 km/h** | 煞車: **0%** | 油門: **94% (幾近全油)**
     *   *解讀*: 在同一時刻，Perez 尚未開始重煞或選擇以更高底速過彎，這顯示了兩者在車輛調校或駕駛習慣上的根本差異。
 
-### 3. 車手一致性分析 (`output/consistency_Max.html`)
-我們深入分析了 **Max Verstappen** 在 53 圈比賽中，每一次通過 S 彎的操作重疊圖。
-- **白色虛線參考**: 代表 **Lap 50 (最快圈, 93.706秒)**，作為最佳表現的基準。
-- **背景軌跡**: 顯示了整場比賽的所有 52 圈。較窄的通道代表極高的穩定性。
-- **演變 (Evolution)**：
-    - 通過觀察顏色從紫色（早期）漸變到黃色（晚期），可以發現隨著輪胎耗損，操作軌跡是否發生偏移。
-    - 離群值 (Outliers) 通常對應到被套圈車阻擋或失誤的單圈。
+### 3. 車手一致性分析 (三位車手)
+我們為每位車手生成了個別的一致性分析,展示各自在整場比賽中通過 S 彎的操作重疊圖。
+
+#### 🟣 Max Verstappen (`output/consistency_Max.html`)
+- **白色實線參考**: 代表 **Lap 50 (最快圈, 93.706秒)**，作為最佳表現的基準
+- **背景軌跡**: 顯示了整場比賽的所有 52 圈,較窄的通道代表極高的穩定性
+- **最快圈**: Lap 50 - 93.706秒 (三位車手中最快)
+
+#### 🔵 Sergio Perez (`output/consistency_Perez.html`)
+- **白色實線參考**: 代表 **Lap 35 (最快圈, 93.945秒)**
+- **背景軌跡**: 52 圈疊加
+- **最快圈**: Lap 35 - 93.945秒 (比 Verstappen 慢 0.239秒)
+
+#### 🟡 Yuki Tsunoda (`output/consistency_Tsunoda.html`)
+- **白色實線參考**: 代表 **Lap 51 (最快圈, 96.342秒)**
+- **背景軌跡**: 50 圈疊加
+- **最快圈**: Lap 51 - 96.342秒 (比 Verstappen 慢 2.636秒)
+
+**共同特性:**
+- **演變 (Evolution)**: 通過觀察顏色從紫色（早期）漸變到黃色（晚期），可以發現隨著輪胎耗損，操作軌跡是否發生偏移
 - **互動功能**:
     - ▶️ **播放按鈕**: 自動以 0.8 秒間隔循環播放所有圈次
     - 滑桿或下拉選單可查看特定圈次與最快圈的差異
     - 紅色連結線顯示當前圈與最快圈起點的偏移距離
+- 離群值 (Outliers) 通常對應到被套圈車阻擋或失誤的單圈
 
-### 4. 車手風格對比 (`output/driver_styles_comparison.html`)
-比較三位車手在 S 彎的**平均駕駛風格**（所有圈次的平均操作模式）。
+### 4. 車手風格對比 (兩個版本)
+
+#### 4a. S 彎版本 (`output/driver_styles_comparison_S.html`)
+比較三位車手在 **S 彎區域** (Sector 1, T3-T7) 的平均駕駛風格。
+- **分析範圍**: 僅 S 彎區段 (~15-45秒)
 - **顏色區分**:
     - 🟣 **Verstappen**: 紫色 - 最快車手 (93.706秒)
     - 🔵 **Perez**: 藍色 - 第二快 (93.945秒，慢 0.239秒)
@@ -110,11 +127,28 @@ python utils/fetch_f1_data.py
     - **跨車隊對比 (vs Tsunoda)**: 包含賽車性能差異，AlphaTauri 明顯較慢
 - **互動功能**: 點擊按鈕可單獨顯示某位車手或顯示全部對比
 
+#### 4b. 全局版本 (`output/driver_styles_comparison.html`)
+比較三位車手在**整場比賽**的平均駕駛風格。
+- **分析範圍**: 完整單圈 (~90-96秒)
+- **顏色與互動**: 與 S 彎版本相同
+- **差異**: 展示完整賽道的綜合駕駛特性，而非特定彎角
+
 ### 5. 互動式視覺化總覽
-靜態圖表難以呈現時間差。本專案提供三個互動式網頁：
+靜態圖表難以呈現時間差。本專案提供**六個**互動式網頁：
+
+**單圈動態追逐:**
 - **`index.html`**: 三位車手 (Max, Perez, Tsunoda) 的 S 彎動態追逐，可拖動時間軸精確重現關鍵瞬間
-- **`consistency_Max.html`**: Max Verstappen 單一車手的 53 圈演變，附播放功能
-- **`driver_styles_comparison.html`**: 三位車手平均風格對比，可切換顯示
+
+**車手一致性分析 (附播放功能):**
+- **`consistency_Max.html`**: Max Verstappen 的 52 圈演變
+- **`consistency_Perez.html`**: Sergio Perez 的 52 圈演變
+- **`consistency_Tsunoda.html`**: Yuki Tsunoda 的 50 圈演變
+
+**車手風格對比 (可切換顯示):**
+- **`driver_styles_comparison.html`**: 全局平均風格 (完整賽道)
+- **`driver_styles_comparison_S.html`**: S 彎平均風格 (Sector 1)
+
+**共同特性:**
 - 網頁內均包含詳細的 **「圖表解讀指南 (How to Read)」**
 - **注意**: 資料點之間的時間間隔約在 **0.4秒 ~ 1.3秒** 之間浮動，這是由於資料來源的不規則性，目前保留此特性以忠實呈現原始資料
 
@@ -309,18 +343,26 @@ python scripts/compare_driver_styles.py
    # Step 3: 找出駕駛差異點
    python scripts/interpret_divergence.py
    
-   # Step 4: 分析單一車手一致性
-   python scripts/analyze_driver_consistency.py
+   # Step 4: 分析三位車手一致性
+   python scripts/analyze_driver_consistency.py 1   # Verstappen
+   python scripts/analyze_driver_consistency.py 11  # Perez
+   python scripts/analyze_driver_consistency.py 22  # Tsunoda
    
-   # Step 5: 比較三位車手平均風格
+   # Step 5: 比較三位車手平均風格 (S 彎)
    python scripts/compare_driver_styles.py
+   
+   # Step 6: 比較三位車手平均風格 (全局)
+   python scripts/compare_driver_styles_full.py
    ```
 
 4. **查看結果:**
    - 靜態圖表: `output/` 目錄下的 PNG 檔案
-   - 互動式網頁: 在瀏覽器開啟
+   - 互動式網頁 (共6個): 在瀏覽器開啟
      - `output/index.html` - 三車手 S 彎動態追逐
-     - `output/consistency_Max.html` - Max 一致性分析 (附播放功能)
-     - `output/driver_styles_comparison.html` - 平均風格對比
+     - `output/consistency_Max.html` - Verstappen 一致性 (播放功能)
+     - `output/consistency_Perez.html` - Perez 一致性 (播放功能)
+     - `output/consistency_Tsunoda.html` - Tsunoda 一致性 (播放功能)
+     - `output/driver_styles_comparison.html` - 全局平均風格對比
+     - `output/driver_styles_comparison_S.html` - S 彎平均風格對比
 
 ---
